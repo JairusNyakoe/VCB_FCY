@@ -1,20 +1,75 @@
 plugins {
     id 'java'
+    id 'org.springframework.boot' version '3.2.1'
+    id 'io.spring.dependency-management' version '1.1.6'
 }
 
-group = 'org.example'
-version = '1.0-SNAPSHOT'
+group = 'emtech'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
 
 repositories {
     mavenCentral()
+    maven { url "https://jaspersoft.jfrog.io/jaspersoft/third-party-ce-artifacts/" }
 }
 
 dependencies {
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // --- Core Spring Boot ---
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-json'
+
+    implementation 'com.github.cage:cage:1.0'
+    // --- Security ---
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.security:spring-security-ldap'
+
+    // --- Swagger / OpenAPI for Spring MVC ---
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+
+    // --- Database driver (Oracle) ---
+    runtimeOnly 'com.oracle.database.jdbc:ojdbc11:23.3.0.23.09'
+
+    // --- JSON, Crypto, and Misc Utilities ---
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+    implementation 'commons-codec:commons-codec:1.16.1'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+
+    // --- XML and JAXB ---
+    implementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.2'
+    implementation 'org.glassfish.jaxb:jaxb-runtime:4.0.5'
+
+    // --- JasperReports ---
+    implementation 'net.sf.jasperreports:jasperreports:6.21.3'
+
+    // --- Lombok ---
+    compileOnly 'org.projectlombok:lombok:1.18.32'
+    annotationProcessor 'org.projectlombok:lombok:1.18.32'
+    implementation 'org.mariadb.jdbc:mariadb-java-client:3.4.1'
+
+    // --- Testing ---
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'
 }
 
-test {
+tasks.named('test') {
     useJUnitPlatform()
+}
+
+bootJar {
+    archiveFileName = "fcy.jar"
 }
