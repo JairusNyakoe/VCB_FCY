@@ -64,7 +64,7 @@ public class PaymentFetch {
                     "and CRM.SEGMENTATION_CLASS = CVM.CATEGORY_VALUE\n" +
                     "and  CHD.tran_id is not null\n" +
                     " AND     CGM.TRAN_SOL_ID IN (SELECT SOL_ID FROM TBAADM.SST WHERE SST.SET_ID = 'ALL')\n" +
-                    " AND     CGM.LODG_DATE = '28-JAN-26'\n" +
+                    " AND     CGM.LODG_DATE = '14-JAN-26'\n" +
                     " AND     CGM.DEL_FLG = 'N'\n" +
                     " AND     CGM.ENTITY_CRE_FLG = 'Y'\n" +
                     " and     gam.cif_id is not null\n" +
@@ -109,7 +109,7 @@ public class PaymentFetch {
                     "and CRM.SEGMENTATION_CLASS = CVM.CATEGORY_VALUE\n" +
                     "and  CHD.tran_id is not null\n" +
                     " AND     CGM.TRAN_SOL_ID IN (SELECT SOL_ID FROM TBAADM.SST WHERE SST.SET_ID = 'ALL')\n" +
-                    " AND     CGM.LODG_DATE = '28-JAN-26'\n" +
+                    " AND     CGM.LODG_DATE = '14-JAN-26'\n" +
                     " AND     CGM.DEL_FLG = 'N'\n" +
                     " and     gam.cif_id is not null\n" +
                     " AND     CGM.ENTITY_CRE_FLG = 'Y'\n" +
@@ -177,7 +177,7 @@ public class PaymentFetch {
                     "       -- FBM.BILL_AMT AMT,\n" +
                     "        (select SUM(EVENT_AMT) from tbaadm.fbh, TBAADM.GCT  where bill_id=fbm.bill_id \n" +
                     "        and bill_func='R' \n" +
-                    "        and ENTITY_CRE_FLG='Y' AND FBH.DEL_FLG='N'  AND  VFD_BOD_DATE='28-JAN-26' \n" +
+                    "        and ENTITY_CRE_FLG='Y' AND FBH.DEL_FLG='N'  AND  VFD_BOD_DATE='14-JAN-26' \n" +
                     "        --AND FBH.DUE_DATE<=DB_STAT_DATE\n" +
                     "        ) AMT,\n" +
                     "        fbm.NOTL_CONV_RATE spot_rate,\n" +
@@ -204,7 +204,7 @@ public class PaymentFetch {
                     " AND FBM.BILL_ID in(select bill_id from tbaadm.fbh, TBAADM.GCT where bill_id=fbm.bill_id \n" +
                     " and bill_func='R'\n" +
                     " and ENTITY_CRE_FLG='Y' AND  FBH.DEL_FLG='N' \n" +
-                    " and fae.tran_date='28-JAN-26' \n" +
+                    " and fae.tran_date='14-JAN-26' \n" +
                     "-- AND FBH.DUE_DATE<=DB_STAT_DATE\n" +
                     " ) \n" +
                     "AND GAM.cif_id = CRM.orgkey\n" +
@@ -258,7 +258,7 @@ public class PaymentFetch {
                     "and tut.foracid = gam.foracid\n" +
                     "and gam.cif_id = crm.orgkey\n" +
                     "and crm.SEGMENTATION_CLASS = cvm.CATEGORY_VALUE\n" +
-                    " AND     DEAL_DATE = '28-JAN-26'\n" +
+                    " AND     DEAL_DATE = '14-JAN-26'\n" +
                     " AND     DEAL_STATE NOT IN ('DLTD')\n" +
                     " AND     A.CCY_TWO_AMOUNT_CCY <> 'KES'\n" +
                     " AND     A.DEAL_NUM < 8000000 AND A.DEAL_NUM > 0 \n" +
@@ -303,7 +303,7 @@ public class PaymentFetch {
                     "and gam.cif_id = crm.orgkey\n" +
                     "and     gam.cif_id is not null\n" +
                     "and crm.SEGMENTATION_CLASS = cvm.CATEGORY_VALUE\n" +
-                    " AND     DEAL_DATE = '28-JAN-26'\n" +
+                    " AND     DEAL_DATE = '14-JAN-26'\n" +
                     " AND     DEAL_STATE NOT IN ('DLTD')\n" +
                     " AND     A.CCY_TWO_SWAP_AMOUNT_CCY <> 'KES'\n" +
                     " AND     A.DEAL_NUM < 8000000 AND A.DEAL_NUM > 0 \n" +
@@ -347,7 +347,7 @@ public class PaymentFetch {
                     "and gam.cif_id = crm.orgkey\n" +
                     "and     gam.cif_id is not null\n" +
                     "and crm.SEGMENTATION_CLASS = cvm.CATEGORY_VALUE\n" +
-                    " AND     DEAL_DATE = '28-JAN-26'\n" +
+                    " AND     DEAL_DATE = '14-JAN-26'\n" +
                     " AND     DEAL_STATE NOT IN ('DLTD')\n" +
                     " AND     A.CCY_ONE_AMOUNT_CCY <> 'KES'\n" +
                     " AND     A.DEAL_NUM < 8000000 AND A.DEAL_NUM > 0 \n" +
@@ -398,7 +398,7 @@ public class PaymentFetch {
                     "and  CHD.tran_id is not null\n" +
                     "and gam.cif_id = APZTB_TRANSACTION_REQUEST.cif_no\n" +
                     "and TB_MB_TRANS_LOG.BULK_REF_NO = APZTB_TRANSACTION_REQUEST.BULK_REF_NO\n" +
-                    "And TRUNC(APZTB_TRANSACTION_REQUEST.CHECKER_DT)= '28-JAN-26'\n" +
+                    "And TRUNC(APZTB_TRANSACTION_REQUEST.CHECKER_DT)= '14-JAN-26'\n" +
                     "AND APZTB_TRANSACTION_REQUEST.ADDL_COL6 IS NULL\n" +
                     "\n" +
                     " UNION ALL\n" +
@@ -443,7 +443,7 @@ public class PaymentFetch {
                     "and  CHD.tran_id is not null\n" +
                     "and gam.cif_id = APZTB_TRANSACTION_REQUEST.cif_no\n" +
                     "and TB_MB_TRANS_LOG.BULK_REF_NO = APZTB_TRANSACTION_REQUEST.BULK_REF_NO\n" +
-                    "And TRUNC(APZTB_TRANSACTION_REQUEST.CHECKER_DT)= '28-JAN-26'\n" +
+                    "And TRUNC(APZTB_TRANSACTION_REQUEST.CHECKER_DT)= '14-JAN-26'\n" +
                     "AND APZTB_TRANSACTION_REQUEST.ADDL_COL6 IS NOT NULL\n" +
                     "\n" +
                     " UNION ALL\n" +
@@ -482,7 +482,7 @@ public class PaymentFetch {
                     "and gam.cif_id = crm.orgkey\n" +
                     "and     gam.cif_id is not null\n" +
                     "and crm.SEGMENTATION_CLASS = cvm.CATEGORY_VALUE\n" +
-                    "AND A.DEAL_DATE =  '28-JAN-26'\n" +
+                    "AND A.DEAL_DATE =  '14-JAN-26'\n" +
                     "AND A.ACCOUNTING_CODE='INTBNK'\n" +
                     "AND A.DEAL_STATE NOT IN ('DLTD')\n" +
                     "AND B.LEG_IDENTIFIER='MNLG' and B.parent_fbo_id_ver=999999\n" +
@@ -526,7 +526,7 @@ public class PaymentFetch {
                     "and gam.cif_id = crm.orgkey\n" +
                     "and     gam.cif_id is not null\n" +
                     "and crm.SEGMENTATION_CLASS = cvm.CATEGORY_VALUE\n" +
-                    "AND A.DEAL_DATE =  '28-JAN-26'\n" +
+                    "AND A.DEAL_DATE =  '14-JAN-26'\n" +
                     "AND A.ACCOUNTING_CODE='INTBNK'\n" +
                     "AND A.DEAL_STATE NOT IN ('DLTD')\n" +
                     "AND B.LEG_IDENTIFIER='MNLG' and B.parent_fbo_id_ver=999999\n" +
@@ -568,7 +568,7 @@ public class PaymentFetch {
                     "and gam.cif_id = crm.orgkey\n" +
                     "and     gam.cif_id is not null\n" +
                     "and crm.SEGMENTATION_CLASS = cvm.CATEGORY_VALUE\n" +
-                    "AND A.DEAL_DATE = '28-JAN-26'\n" +
+                    "AND A.DEAL_DATE = '14-JAN-26'\n" +
                     "AND A.ACCOUNTING_CODE='INTBNK'\n" +
                     "AND A.DEAL_STATE NOT IN ('DLTD')\n" +
                     "AND B.LEG_IDENTIFIER='MNLG' and B.parent_fbo_id_ver=999999\n" +
@@ -612,7 +612,7 @@ public class PaymentFetch {
                     "and gam.cif_id = crm.orgkey\n" +
                     "and     gam.cif_id is not null\n" +
                     "and crm.SEGMENTATION_CLASS = cvm.CATEGORY_VALUE\n" +
-                    "AND A.DEAL_DATE = '28-JAN-26'\n" +
+                    "AND A.DEAL_DATE = '14-JAN-26'\n" +
                     "AND A.ACCOUNTING_CODE='INTBNK'\n" +
                     "AND A.DEAL_STATE NOT IN ('DLTD')\n" +
                     "AND B.LEG_IDENTIFIER='MNLG' and B.parent_fbo_id_ver=999999\n" +
@@ -656,7 +656,7 @@ public class PaymentFetch {
                     "and gam.cif_id = crm.orgkey\n" +
                     "and     gam.cif_id is not null\n" +
                     "and crm.SEGMENTATION_CLASS = cvm.CATEGORY_VALUE\n" +
-                    "AND A.DEAL_DATE = '28-JAN-26'\n" +
+                    "AND A.DEAL_DATE = '14-JAN-26'\n" +
                     "AND A.ACCOUNTING_CODE='INTBNK'\n" +
                     "AND A.DEAL_STATE NOT IN ('DLTD')\n" +
                     "AND B.LEG_IDENTIFIER='NELG' and B.parent_fbo_id_ver=999999\n" +
@@ -700,7 +700,7 @@ public class PaymentFetch {
                     "and gam.cif_id = crm.orgkey\n" +
                     "and     gam.cif_id is not null\n" +
                     "and crm.SEGMENTATION_CLASS = cvm.CATEGORY_VALUE\n" +
-                    "AND A.DEAL_DATE = '28-JAN-26'\n" +
+                    "AND A.DEAL_DATE = '14-JAN-26'\n" +
                     "AND A.ACCOUNTING_CODE='INTBNK'\n" +
                     "AND A.DEAL_STATE NOT IN ('DLTD')\n" +
                     "AND B.LEG_IDENTIFIER='NELG' and B.parent_fbo_id_ver=999999\n" +
