@@ -124,7 +124,7 @@ public class PurchasesService {
             dynamicItems.add(Map.of("Code", row + ".7", "Value", p.getCross()));
             dynamicItems.add(Map.of("Code", row + ".8", "Value", p.getUsdEquivalent()));
             dynamicItems.add(Map.of("Code", row + ".9", "Value", p.getInterBankCodes()));
-            dynamicItems.add(Map.of("Code", row + ".10", "Value", p.getSector()));
+            dynamicItems.add(Map.of("Code", row + ".11", "Value", p.getSector()));
             row++;
         }
 
@@ -191,7 +191,7 @@ public class PurchasesService {
 
     private void scheduleStatusCheck(String fileName) {
         Executors.newSingleThreadScheduledExecutor()
-                .schedule(() -> checkStatus(fileName), 30, TimeUnit.SECONDS);
+                .schedule(() -> checkStatus(fileName), 4, TimeUnit.MINUTES);
     }
 
     private void checkStatus(String fileName) {

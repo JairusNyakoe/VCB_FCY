@@ -48,7 +48,7 @@ public class HoldingService {
         this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
-    @Scheduled(fixedDelay = 20000)
+    @Scheduled(fixedDelay = 30000)
     public void scheduledHoldingsSubmission() {
         try {
             LocalDate today = LocalDate.now();
@@ -80,14 +80,13 @@ public class HoldingService {
 
         int finYear = firstDayOfPrevMonth.getYear();
 
-        int batchSize = 50;
+        int batchSize = 500;
         int offset = 0;
         boolean hasMoreRecords = true;
 
         while (hasMoreRecords) {
             List<Props> batch = new ArrayList<>();
 
-            // Fetch next batch using OFFSET/FETCH NEXT
             String sql = """
             SELECT *
             FROM custom.forex_holdings
@@ -131,13 +130,15 @@ public class HoldingService {
             List<Map<String, Object>> dynamicItems = new ArrayList<>();
             int rowNumber = 1;
             for (Props p : batch) {
-                dynamicItems.add(Map.of("Code", rowNumber + ".1", "Value", p.getAccountRef()));
-                dynamicItems.add(Map.of("Code", rowNumber + ".2", "Value", p.getCustomerName()));
-                dynamicItems.add(Map.of("Code", rowNumber + ".3", "Value", p.getCurrency()));
-                dynamicItems.add(Map.of("Code", rowNumber + ".4", "Value", p.getAmount()));
-                dynamicItems.add(Map.of("Code", rowNumber + ".5", "Value", p.getCross()));
-                dynamicItems.add(Map.of("Code", rowNumber + ".6", "Value", p.getAccountType()));
-                dynamicItems.add(Map.of("Code", rowNumber + ".7", "Value", p.getSector()));
+
+                dynamicItems.add(new HashMap<>(Map.of("Code", rowNumber + ".1", "Value", Objects.toString(p.getAccountRef(), ""))));
+                dynamicItems.add(new HashMap<>(Map.of("Code", rowNumber + ".2", "Value", Objects.toString(p.getCustomerName(), ""))));
+                dynamicItems.add(new HashMap<>(Map.of("Code", rowNumber + ".3", "Value", Objects.toString(p.getCurrency(), ""))));
+                dynamicItems.add(new HashMap<>(Map.of("Code", rowNumber + ".4", "Value", Objects.toString(p.getAmount(), ""))));
+                dynamicItems.add(new HashMap<>(Map.of("Code", rowNumber + ".5", "Value", Objects.toString(p.getCross(), ""))));
+                dynamicItems.add(new HashMap<>(Map.of("Code", rowNumber + ".6", "Value", Objects.toString(p.getAccountType(), ""))));
+                dynamicItems.add(new HashMap<>(Map.of("Code", rowNumber + ".7", "Value", Objects.toString(p.getSector(), ""))));
+
                 rowNumber++;
             }
 
@@ -191,8 +192,15 @@ public class HoldingService {
                 log.error("Unexpected error submitting batch starting with {}", batch.get(0).getAccountRef(), e);
             }
 
-            // Increment offset for next batch
             offset += batch.size();
+
+
+            try {
+                Thread.sleep(10 * 60 * 1000); // 10 minutes
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error("Batch delay interrupted", e);
+            }
         }
         return null;
     }
@@ -238,7 +246,7 @@ public class HoldingService {
 
     private void scheduleStatusCheck(String fileName) {
         Executors.newSingleThreadScheduledExecutor()
-                .schedule(() -> checkStatus(fileName), 30, TimeUnit.SECONDS);
+                .schedule(() -> checkStatus(fileName), 5, TimeUnit.MINUTES);
     }
 
     private void checkStatus(String fileName) {

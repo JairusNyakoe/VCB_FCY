@@ -51,7 +51,7 @@ public class SalesService {
     // =============================
     // Scheduled submission
     // =============================
-    @Scheduled(fixedDelay = 20000)
+    @Scheduled(fixedDelay = 30000)
     public void scheduledSalesSubmission() {
         try {
             LocalDate today = LocalDate.now();
@@ -125,7 +125,7 @@ public class SalesService {
             dynamicItems.add(Map.of("Code", row + ".7", "Value", p.getCross()));
             dynamicItems.add(Map.of("Code", row + ".8", "Value", p.getUsdEquivalent()));
             dynamicItems.add(Map.of("Code", row + ".9", "Value", p.getInterBankCodes()));
-            dynamicItems.add(Map.of("Code", row + ".10", "Value", p.getSector()));
+            dynamicItems.add(Map.of("Code", row + ".11", "Value", p.getSector()));
             row++;
         }
 
@@ -192,7 +192,7 @@ public class SalesService {
 
     private void scheduleStatusCheck(String fileName) {
         Executors.newSingleThreadScheduledExecutor()
-                .schedule(() -> checkStatus(fileName), 30, TimeUnit.SECONDS);
+                .schedule(() -> checkStatus(fileName), 7, TimeUnit.MINUTES);
     }
 
     private void checkStatus(String fileName) {

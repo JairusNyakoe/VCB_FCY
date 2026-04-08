@@ -134,7 +134,7 @@ public class ReceiptsService {
             dynamicItems.add(Map.of("Code", rowNumber + ".6", "Value", p.getSpotExchangerate()));
             dynamicItems.add(Map.of("Code", rowNumber + ".7", "Value", p.getCross()));
             dynamicItems.add(Map.of("Code", rowNumber + ".8", "Value", p.getUsdEquivalent()));
-            dynamicItems.add(Map.of("Code", rowNumber + ".9", "Value", p.getSector()));
+            dynamicItems.add(Map.of("Code", rowNumber + ".10", "Value", p.getSector()));
             rowNumber++;
         }
 
@@ -224,7 +224,7 @@ public class ReceiptsService {
     // =========================
     private void scheduleStatusCheck(String fileName) {
         Executors.newSingleThreadScheduledExecutor()
-                .schedule(() -> checkStatus(fileName), 30, TimeUnit.SECONDS);
+                .schedule(() -> checkStatus(fileName), 6, TimeUnit.MINUTES);
     }
     private void checkStatus(String fileName) {
         Properties prop = configurations.getProperties();
