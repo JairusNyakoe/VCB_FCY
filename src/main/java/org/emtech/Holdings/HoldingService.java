@@ -185,9 +185,20 @@ public class HoldingService {
                     log.warn("CBK returned null response for batch starting with record {}", batch.get(0).getAccountRef());
                 }
 
+            } catch (org.springframework.web.reactive.function.client.WebClientRequestException e) {
+
+                if (e.getCause() instanceof java.net.UnknownHostException) {
+                    log.error("No connection to CBK (DNS failure). Cannot resolve host bankreturns.centralbank.go.ke");
+                } else {
+                    log.error("No connection to CBK. Network error: {}", e.getMessage());
+                }
+
             } catch (org.springframework.web.reactive.function.client.WebClientResponseException e) {
-                log.error("Batch starting with {} failed with {}: {}", batch.get(0).getAccountRef(), e.getRawStatusCode(), e.getResponseBodyAsString());
-                System.out.println("Failed request body: " + requestBody);
+                log.error("CBK responded with HTTP {} for batch {}: {}",
+                        e.getRawStatusCode(),
+                        batch.get(0).getAccountRef(),
+                        e.getResponseBodyAsString());
+
             } catch (Exception e) {
                 log.error("Unexpected error submitting batch starting with {}", batch.get(0).getAccountRef(), e);
             }
@@ -225,10 +236,8 @@ public class HoldingService {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             int index = 1;
-            ps.setString(index++, fileName);  // First parameter: fileName
-            ps.setString(index++, status);    // Second parameter: status
-
-            // Fill in the placeholders with account references
+            ps.setString(index++, fileName);
+            ps.setString(index++, status);
             for (Props p : batch) {
                 ps.setString(index++, p.getAccountRef());
             }

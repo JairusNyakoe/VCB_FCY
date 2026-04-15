@@ -29,14 +29,11 @@ public class LogIn {
         this.webClient = webClient;
         this.configurations = configurations;
     }
-
-    // ✅ Generate token when application starts
     @PostConstruct
     public void init() {
         authenticate();
     }
 
-    // ✅ Refresh token every 2 hours
     @Scheduled(fixedRate = 2 * 60 * 60 * 1000)
     public void refreshTokenAutomatically() {
         System.out.println("Refreshing token automatically...");

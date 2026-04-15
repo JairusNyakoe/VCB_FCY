@@ -12,7 +12,9 @@ import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 
+import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -161,6 +163,17 @@ public class PaymentService {
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();
+
+        } catch (WebClientRequestException e) {
+
+            if (e.getCause() instanceof UnknownHostException) {
+                log.error("No connection to CBK (DNS failure). Cannot resolve bankreturns.centralbank.go.ke");
+            } else {
+                log.error("No connection to CBK. Network error: {}", e.getMessage());
+            }
+
+            return null; // application continues running
+
         } catch (Exception e) {
             log.error("Error submitting payments to CBK", e);
             return null;
@@ -228,15 +241,16 @@ public class PaymentService {
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();
+
             if (response != null && response.containsKey("filename")) {
 
                 String status = String.valueOf(response.get("status"));
 
                 String updateSql = """
-                    UPDATE custom.forex_payments
-                    SET CBK_STATUS = ?
-                    WHERE CBK_FILENAME = ?
-                    """;
+            UPDATE custom.forex_payments
+            SET CBK_STATUS = ?
+            WHERE CBK_FILENAME = ?
+            """;
 
                 try (Connection conn = databaseConnection.dbConnection();
                      PreparedStatement ps = conn.prepareStatement(updateSql)) {
@@ -245,10 +259,20 @@ public class PaymentService {
                     ps.setString(2, fileName);
                     ps.executeUpdate();
 
-                    log.info("Updated CBK payment status for file {} → {}", fileName, status);
+                    log.info("Updated CBK payment status for file {} -> {}", fileName, status);
                 }
+
             } else {
                 log.warn("CBK response is null OR missing 'filename' key for file {}", fileName);
+            }
+
+        } catch (WebClientRequestException e) {
+
+            if (e.getCause() instanceof UnknownHostException) {
+                log.error("No connection to CBK (DNS failure). Cannot resolve bankreturns.centralbank.go.ke");
+            } else {
+                log.error("No connection to CBK while checking status for file {}. Network error: {}",
+                        fileName, e.getMessage());
             }
 
         } catch (Exception e) {

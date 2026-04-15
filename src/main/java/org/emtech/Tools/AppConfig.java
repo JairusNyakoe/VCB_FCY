@@ -1,4 +1,4 @@
-package org.emtech.Tools;  // or org.emtech.Config — your choice
+package org.emtech.Tools;
 
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -12,11 +12,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
 @Configuration
-public class AppConfig {   // better name than Configurations or WebClientConfig
+public class AppConfig {
 
-    // ────────────────────────────────────────────────
-    // 1. Scheduler configuration (fixes your parallel execution problem)
-    // ────────────────────────────────────────────────
+
     @Bean
     public TaskScheduler taskScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
@@ -24,14 +22,10 @@ public class AppConfig {   // better name than Configurations or WebClientConfig
         scheduler.setThreadNamePrefix("ForexTask-");
         scheduler.setAwaitTerminationSeconds(60);
         scheduler.setWaitForTasksToCompleteOnShutdown(true);
-        // Optional: log uncaught exceptions from scheduled tasks
-        // scheduler.setErrorHandler(t -> log.error("Scheduled task failed", t));
         return scheduler;
     }
 
-    // ────────────────────────────────────────────────
-    // 2. Custom WebClient with insecure SSL (for self-signed/test certs)
-    // ────────────────────────────────────────────────
+
     @Bean
     public WebClient webClient() throws Exception {
         SslContext sslContext = SslContextBuilder
@@ -47,6 +41,4 @@ public class AppConfig {   // better name than Configurations or WebClientConfig
                 .build();
     }
 
-    // You can also move your property loading here if you want
-    // (but it's fine to keep it separate in Configurations)
 }

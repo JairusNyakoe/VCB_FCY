@@ -13,7 +13,10 @@ import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -144,14 +147,36 @@ public class SalesService {
         body.put("DynamicItemsList", List.of(area));
 
         String url = String.format(urlTemplate, returnKey, version);
-        Map response = webClient.post()
-                .uri(url)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + logIn.getAccessToken())
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(body)
-                .retrieve()
-                .bodyToMono(Map.class)
-                .block();
+        Map response;
+
+        try {
+            response = webClient.post()
+                    .uri(url)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + logIn.getAccessToken())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+
+        } catch (WebClientRequestException e) {
+
+            if (e.getCause() instanceof UnknownHostException) {
+                log.error("No connection to CBK (DNS failure). Cannot resolve bankreturns.centralbank.go.ke");
+            } else {
+                log.error("No connection to CBK. Network error: {}", e.getMessage());
+            }
+
+            return null;
+
+        } catch (WebClientResponseException e) {
+            log.error("CBK responded with HTTP {} : {}", e.getRawStatusCode(), e.getResponseBodyAsString());
+            return null;
+
+        } catch (Exception e) {
+            log.error("Error submitting sales to CBK", e);
+            return null;
+        }
 
         if (response == null) return null;
 
@@ -218,6 +243,19 @@ public class SalesService {
                     ps.executeUpdate();
                 }
             }
+
+        } catch (WebClientRequestException e) {
+
+            if (e.getCause() instanceof UnknownHostException) {
+                log.error("No connection to CBK (DNS failure) while checking sales status. Cannot resolve bankreturns.centralbank.go.ke");
+            } else {
+                log.error("No connection to CBK while checking sales status for file {}. Network error: {}",
+                        fileName, e.getMessage());
+            }
+
+        } catch (WebClientResponseException e) {
+            log.error("CBK status check returned HTTP {} for file {} : {}",
+                    e.getRawStatusCode(), fileName, e.getResponseBodyAsString());
 
         } catch (Exception e) {
             log.error("Status check failed", e);

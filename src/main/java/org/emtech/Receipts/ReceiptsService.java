@@ -12,7 +12,10 @@ import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -212,8 +215,23 @@ public class ReceiptsService {
                 conn.commit();
             }
             log.info("Successfully marked {} records as posted.", propsList.size());
+        } catch (WebClientRequestException e) {
+
+            if (e.getCause() instanceof UnknownHostException) {
+                log.error("No connection to CBK (DNS failure). Cannot resolve bankreturns.centralbank.go.ke");
+            } else {
+                log.error("No connection to CBK. Network error: {}", e.getMessage());
+            }
+
+            return null;
+
+        } catch (WebClientResponseException e) {
+            log.error("CBK responded with HTTP {} : {}", e.getRawStatusCode(), e.getResponseBodyAsString());
+            return null;
+
         } catch (Exception e) {
-            log.error("Error updating posted records", e);
+            log.error("Error submitting receipts to CBK", e);
+            return null;
         }
 
         return response;
@@ -263,6 +281,19 @@ public class ReceiptsService {
             } else {
                 log.warn("CBK status response was null or missing filename.");
             }
+
+        } catch (WebClientRequestException e) {
+
+            if (e.getCause() instanceof UnknownHostException) {
+                log.error("No connection to CBK (DNS failure) while checking receipts status. Cannot resolve bankreturns.centralbank.go.ke");
+            } else {
+                log.error("No connection to CBK while checking receipts status for file {}. Network error: {}",
+                        fileName, e.getMessage());
+            }
+
+        } catch (WebClientResponseException e) {
+            log.error("CBK status check returned HTTP {} for file {} : {}",
+                    e.getRawStatusCode(), fileName, e.getResponseBodyAsString());
 
         } catch (Exception e) {
             log.error("Error fetching CBK status for file " + fileName, e);
