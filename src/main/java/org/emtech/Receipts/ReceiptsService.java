@@ -109,7 +109,11 @@ public class ReceiptsService {
                 p.setSpotExchangerate(rs.getString("SPOTEXCHANGERATE"));
                 p.setCross(rs.getString("CROSSRATE"));
                 p.setUsdEquivalent(rs.getString("USDEQUIVALENT"));
-                p.setSector(rs.getString("SECTORCODE"));
+                String sectorCode = rs.getString("SECTORCODE");
+                p.setSector(sectorCode);
+
+                String sectorDesc = SECTOR_MAPR.getOrDefault(sectorCode, "UNKNOWN");
+                p.setSectorDescription(sectorDesc);
                 propsList.add(p);
             }
 
@@ -129,15 +133,18 @@ public class ReceiptsService {
         List<Map<String, Object>> dynamicItems = new ArrayList<>();
         int rowNumber = 1;
         for (Props p : propsList) {
-            dynamicItems.add(Map.of("Code", rowNumber + ".1", "Value", p.getTransRefCode()));
-            dynamicItems.add(Map.of("Code", rowNumber + ".2", "Value", p.getCustomerName()));
-            dynamicItems.add(Map.of("Code", rowNumber + ".3", "Value", p.getCurrency()));
-            dynamicItems.add(Map.of("Code", rowNumber + ".4", "Value", p.getAmount()));
-            dynamicItems.add(Map.of("Code", rowNumber + ".5", "Value", p.getTimestamp()));
-            dynamicItems.add(Map.of("Code", rowNumber + ".6", "Value", p.getSpotExchangerate()));
-            dynamicItems.add(Map.of("Code", rowNumber + ".7", "Value", p.getCross()));
-            dynamicItems.add(Map.of("Code", rowNumber + ".8", "Value", p.getUsdEquivalent()));
-            dynamicItems.add(Map.of("Code", rowNumber + ".10", "Value", p.getSector()));
+
+            addIfNotNull(dynamicItems, rowNumber + ".1", p.getTransRefCode());
+            addIfNotNull(dynamicItems, rowNumber + ".2", p.getCustomerName());
+            addIfNotNull(dynamicItems, rowNumber + ".3", p.getCurrency());
+            addIfNotNull(dynamicItems, rowNumber + ".4", p.getAmount());
+            addIfNotNull(dynamicItems, rowNumber + ".5", p.getTimestamp());
+            addIfNotNull(dynamicItems, rowNumber + ".6", p.getSpotExchangerate());
+            addIfNotNull(dynamicItems, rowNumber + ".7", p.getCross());
+            addIfNotNull(dynamicItems, rowNumber + ".8", p.getUsdEquivalent());
+            addIfNotNull(dynamicItems, rowNumber + ".10", p.getSector());
+            addIfNotNull(dynamicItems, rowNumber + ".11", p.getSectorDescription());
+
             rowNumber++;
         }
 
@@ -236,6 +243,14 @@ public class ReceiptsService {
 
         return response;
     }
+    private void addIfNotNull(List<Map<String, Object>> list, String code, Object value) {
+        if (value != null) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("Code", code);
+            map.put("Value", value);
+            list.add(map);
+        }
+    }
 
     // =========================
     // Check CBK status after 30 seconds
@@ -299,4 +314,16 @@ public class ReceiptsService {
             log.error("Error fetching CBK status for file " + fileName, e);
         }
     }
+    private static final Map<String, String> SECTOR_MAPR = Map.ofEntries(
+            Map.entry("RG01", "Agricultural Exports"),
+            Map.entry("RS08", "Other services"),
+            Map.entry("RG08", "Manufactured-Non-Food"),
+            Map.entry("RG13", "Renewable Energy and Green Technology"),
+            Map.entry("RS03", "Financial services"),
+            Map.entry("RT0",  "Transfer"),
+            Map.entry("RG07", "Manufactured- Food"),
+            Map.entry("RS0", "SERVICES"),
+            Map.entry("RS01", "Transport Services"),
+            Map.entry("RG14", "Manufactured- Food")
+    );
 }

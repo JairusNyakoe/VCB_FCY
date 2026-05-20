@@ -12,7 +12,9 @@ import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 
+import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -63,7 +65,6 @@ public class HoldingService {
             log.error("Scheduled Holdings submission failed", e);
         }
     }
-
     public Map<String, Object> submitHoldings(LocalDate start, LocalDate end) {
 
         Properties prop = configurations.getProperties();
@@ -72,74 +73,78 @@ public class HoldingService {
         String version = prop.getProperty("version");
         String instCode = prop.getProperty("InstCode");
 
+        String sql = """
+        SELECT *
+        FROM custom.forex_holdings
+        WHERE POSTED_FLAG = 'N'
+        AND FOREXTYPE = 'H'
+    """;
+
         LocalDate firstDayOfPrevMonth = start.minusMonths(1).withDayOfMonth(1);
-        LocalDate lastDayOfPrevMonth = start.minusMonths(1).with(TemporalAdjusters.lastDayOfMonth());
+        LocalDate lastDayOfPrevMonth  = start.minusMonths(1).with(TemporalAdjusters.lastDayOfMonth());
 
-        String startDate = firstDayOfPrevMonth.atStartOfDay().format(dateFormatter);
-        String endDate = lastDayOfPrevMonth.atStartOfDay().format(dateFormatter);
+        String
+                startDate = firstDayOfPrevMonth.atStartOfDay().format(dateFormatter);
+        String endDate   = lastDayOfPrevMonth.atStartOfDay().format(dateFormatter);
+        int finYear      = firstDayOfPrevMonth.getYear();
 
-        int finYear = firstDayOfPrevMonth.getYear();
+        List<Props> allRecords = new ArrayList<>();
 
-        int batchSize = 500;
-        int offset = 0;
-        boolean hasMoreRecords = true;
+        try (Connection conn = databaseConnection.dbConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
 
-        while (hasMoreRecords) {
-            List<Props> batch = new ArrayList<>();
+            while (rs.next()) {
+                Props p = new Props();
+                p.setAccountRef(rs.getString("ACCOUNTREF"));
+                p.setCustomerName(rs.getString("CUSTOMERNAME"));
+                p.setAccountType(rs.getString("ACCOUNTTYPE"));
+                p.setCurrency(rs.getString("CURRENCY"));
+                p.setAmount(rs.getString("AMOUNT"));
+                p.setCross(rs.getString("CROSSRATE"));
 
-            String sql = """
-            SELECT *
-            FROM custom.forex_holdings
-            WHERE POSTED_FLAG = 'N' AND FOREXTYPE = 'H'
-            ORDER BY ACCOUNTREF
-            OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-        """;
+                String sectorCode = rs.getString("SECTORCODE");
+                p.setSector(sectorCode);
+                p.setSectorDescription(SECTOR_MAPH.getOrDefault(sectorCode, "UNKNOWN"));
 
-            try (Connection conn = databaseConnection.dbConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-
-                ps.setInt(1, offset);
-                ps.setInt(2, batchSize);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        Props p = new Props();
-                        p.setAccountRef(rs.getString("ACCOUNTREF"));
-                        p.setCustomerName(rs.getString("CUSTOMERNAME"));
-                        p.setAccountType(rs.getString("ACCOUNTTYPE"));
-                        p.setCurrency(rs.getString("CURRENCY"));
-                        p.setAmount(rs.getString("AMOUNT"));
-                        p.setCross(rs.getString("CROSSRATE"));
-                        p.setSector(rs.getString("SECTORCODE"));
-                        batch.add(p);
-                    }
-                }
-
-            } catch (Exception e) {
-                log.error("Error fetching holdings from DB", e);
-                return null;
+                allRecords.add(p);
             }
 
-            if (batch.isEmpty()) {
-                hasMoreRecords = false;
-                log.info("All holdings have been submitted.");
-                break;
-            }
+        } catch (Exception e) {
+            log.error("Error fetching holdings from DB", e);
+            return null;
+        }
 
-            // Build dynamic items for this batch
+        if (allRecords.isEmpty()) {
+            log.info("No unposted holdings found.");
+            return null;
+        }
+
+      //  log.info("Total holdings to submit: ++++++++++++++++++++++++++++++++++++++++++++++++++++{}", allRecords.size());
+
+
+        int batchSize = 50;
+        Map<String, Object> lastResponse = null;
+
+        for (int i = 0; i < allRecords.size(); i += batchSize) {
+
+            List<Props> batch = allRecords.subList(i, Math.min(i + batchSize, allRecords.size()));
+            int batchNumber = (i / batchSize) + 1;
+           // log.info("Submitting batch________________________________________________________ {} ({} records)", batchNumber, batch.size());
+
             List<Map<String, Object>> dynamicItems = new ArrayList<>();
-            int rowNumber = 1;
+            int row = 1;
+
             for (Props p : batch) {
-
-                dynamicItems.add(new HashMap<>(Map.of("Code", rowNumber + ".1", "Value", Objects.toString(p.getAccountRef(), ""))));
-                dynamicItems.add(new HashMap<>(Map.of("Code", rowNumber + ".2", "Value", Objects.toString(p.getCustomerName(), ""))));
-                dynamicItems.add(new HashMap<>(Map.of("Code", rowNumber + ".3", "Value", Objects.toString(p.getCurrency(), ""))));
-                dynamicItems.add(new HashMap<>(Map.of("Code", rowNumber + ".4", "Value", Objects.toString(p.getAmount(), ""))));
-                dynamicItems.add(new HashMap<>(Map.of("Code", rowNumber + ".5", "Value", Objects.toString(p.getCross(), ""))));
-                dynamicItems.add(new HashMap<>(Map.of("Code", rowNumber + ".6", "Value", Objects.toString(p.getAccountType(), ""))));
-                dynamicItems.add(new HashMap<>(Map.of("Code", rowNumber + ".7", "Value", Objects.toString(p.getSector(), ""))));
-
-                rowNumber++;
+                addIfNotNull(dynamicItems, row + ".1",  p.getAccountRef());
+                addIfNotNull(dynamicItems, row + ".2",  p.getCustomerName());
+                addIfNotNull(dynamicItems, row + ".3",  p.getCurrency());
+                addIfNotNull(dynamicItems, row + ".4",  p.getAmount());
+                addIfNotNull(dynamicItems, row + ".5",  p.getCross());
+                addIfNotNull(dynamicItems, row + ".7",  p.getAccountType());
+                addIfNotNull(dynamicItems, row + ".10", p.getSector());
+                addIfNotNull(dynamicItems, row + ".11", p.getSectorDescription());
+                row++;
             }
 
             Map<String, Object> areaMap = new HashMap<>();
@@ -155,11 +160,22 @@ public class HoldingService {
             requestBody.put("EndDate", endDate);
             requestBody.put("ReturnItemsList", new ArrayList<>());
             requestBody.put("DynamicItemsList", List.of(areaMap));
+            try {
+                String payloadJson = objectMapper.writerWithDefaultPrettyPrinter()
+                        .writeValueAsString(requestBody);
+
+                //  log.info("Batch {} Payload:_________________________________________________________________________________________\n{}", batchNumber, payloadJson);
+
+            } catch (Exception e) {
+             //   log.error("Batch {} Failed to print payload", batchNumber, e);
+            }
 
             String url = String.format(urlTemplate, returnKey, version);
 
+
+            Map response;
             try {
-                Map response = webClient.post()
+                response = webClient.post()
                         .uri(url)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + logIn.getAccessToken())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -168,96 +184,88 @@ public class HoldingService {
                         .bodyToMono(Map.class)
                         .block();
 
-                if (response != null) {
-                    String status = String.valueOf(response.get("status"));
-                    String fileName = String.valueOf(response.get("filename"));
-
-                    if ("N".equalsIgnoreCase(status)) {
-
-                        updatePostedRecords(batch, fileName, status);
-                        // Schedule status check
-                        scheduleStatusCheck(fileName);
-                    } else {
-                        log.warn("CBK returned status '{}' for batch starting with record {}", status, batch.get(0).getAccountRef());
-                    }
-
+            } catch (WebClientRequestException e) {
+                if (e.getCause() instanceof UnknownHostException) {
+                    log.error("Batch {}: No connection to CBK (DNS failure).", batchNumber);
                 } else {
-                    log.warn("CBK returned null response for batch starting with record {}", batch.get(0).getAccountRef());
+                    log.error("Batch {}: Network error: {}", batchNumber, e.getMessage());
                 }
-
-            } catch (org.springframework.web.reactive.function.client.WebClientRequestException e) {
-
-                if (e.getCause() instanceof java.net.UnknownHostException) {
-                    log.error("No connection to CBK (DNS failure). Cannot resolve host bankreturns.centralbank.go.ke");
-                } else {
-                    log.error("No connection to CBK. Network error: {}", e.getMessage());
-                }
-
-            } catch (org.springframework.web.reactive.function.client.WebClientResponseException e) {
-                log.error("CBK responded with HTTP {} for batch {}: {}",
-                        e.getRawStatusCode(),
-                        batch.get(0).getAccountRef(),
-                        e.getResponseBodyAsString());
+                continue; // try next batch
 
             } catch (Exception e) {
-                log.error("Unexpected error submitting batch starting with {}", batch.get(0).getAccountRef(), e);
+               // log.error("Batch {}: Error submitting to CBK", batchNumber, e);
+                continue;
             }
 
-            offset += batch.size();
-
-
-            try {
-                Thread.sleep(10 * 60 * 1000); // 10 minutes
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.error("Batch delay interrupted", e);
+            if (response == null) {
+                log.warn("Batch {}: CBK returned null response", batchNumber);
+                continue;
             }
+
+            response.put("returnKey", returnKey);
+            response.put("area", 64);
+
+            String status   = String.valueOf(response.get("status"));
+            String fileName = String.valueOf(response.get("filename"));
+
+           // log.info("Batch {}: status={}, fileName={}", batchNumber, status, fileName);
+
+            if (!"N".equalsIgnoreCase(status)) {
+              //  log.warn("Batch {}: submission failed. Status: {}", batchNumber, status);
+                continue;
+            }
+
+            // Update only this batch's records
+            String updateSql = """
+            UPDATE custom.forex_holdings
+            SET POSTED_FLAG = 'Y',
+                CBK_FILENAME = ?,
+                CBK_STATUS = ?,
+                POSTED_DATE = SYSDATE
+            WHERE ACCOUNTREF = ?
+            AND FOREXTYPE = 'H'
+            AND POSTED_FLAG = 'N'
+            """;
+
+            try (Connection conn = databaseConnection.dbConnection()) {
+                conn.setAutoCommit(false);
+                try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
+                    for (Props p : batch) {
+                        ps.setString(1, fileName);
+                        ps.setString(2, status);
+                        ps.setString(3, p.getAccountRef());
+                        ps.addBatch();
+                    }
+                    ps.executeBatch();
+                    conn.commit();
+              //      log.info("Batch {}: {} records marked as posted.", batchNumber, batch.size());
+                }
+            } catch (Exception e) {
+                log.error("Batch {}: Error updating posted records", batchNumber, e);
+            }
+
+            if (fileName != null && !"null".equalsIgnoreCase(fileName)) {
+                scheduleStatusCheck(fileName);
+            }
+
+            lastResponse = response;
         }
-        return null;
+
+        return lastResponse;
     }
-    private void updatePostedRecords(List<Props> batch, String fileName, String status) {
-        if (batch.isEmpty()) return;
-
-        // Build a list of placeholders for prepared statement
-        String placeholders = String.join(",", Collections.nCopies(batch.size(), "?"));
-
-        String sql = """
-        UPDATE custom.forex_holdings
-        SET posted_flag = 'Y',
-            cbk_filename = ?,
-            cbk_status = ?,
-            posted_date = SYSDATE
-        WHERE FOREXTYPE = 'H'
-          AND POSTED_FLAG = 'N'
-          AND ACCOUNTREF IN (%s)
-    """.formatted(placeholders);
-
-        try (Connection conn = databaseConnection.dbConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            int index = 1;
-            ps.setString(index++, fileName);
-            ps.setString(index++, status);
-            for (Props p : batch) {
-                ps.setString(index++, p.getAccountRef());
-            }
-
-            int updatedRows = ps.executeUpdate();
-            log.info("Updated {} records as posted for batch starting with {}", updatedRows, batch.get(0).getAccountRef());
-
-        } catch (Exception e) {
-            log.error("Error updating posted records for batch starting with {}", batch.get(0).getAccountRef(), e);
-        }
-    }
-
-
-
 
     private void scheduleStatusCheck(String fileName) {
         Executors.newSingleThreadScheduledExecutor()
                 .schedule(() -> checkStatus(fileName), 5, TimeUnit.MINUTES);
     }
-
+    private void addIfNotNull(List<Map<String, Object>> list, String code, Object value) {
+        if (value != null && !value.toString().trim().isEmpty()) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("Code", code);
+            map.put("Value", value);
+            list.add(map);
+        }
+    }
     private void checkStatus(String fileName) {
         try {
             Properties prop = configurations.getProperties();
@@ -290,4 +298,17 @@ public class HoldingService {
             log.error("Error checking holdings status", e);
         }
     }
+    private static final Map<String, String> SECTOR_MAPH = Map.ofEntries(
+            Map.entry("HG01", "Livestock and Animal Products"),
+            Map.entry("HS07", "Other services"),
+            Map.entry("HG08", "Construction Materials"),
+            Map.entry("HG11", "Electronics and ICT"),
+            Map.entry("HS03", "Financial services"),
+            Map.entry("HT03",  "Transfers"),
+            Map.entry("HG06", "Manufactured goods"),
+            Map.entry("HG03", "Oil and Allied"),
+            Map.entry("HS02", "Travel and tourism services"),
+            Map.entry("HS01", "Transport Services"),
+            Map.entry("HG14", "Food and Beverages")
+    );
 }

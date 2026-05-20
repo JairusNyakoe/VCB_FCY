@@ -107,7 +107,11 @@ public class PaymentService {
                 p.setSpotExchangerate(rs.getString("SPOTEXCHANGERATE"));
                 p.setCross(rs.getString("CROSSRATE"));
                 p.setUsdEquivalent(rs.getString("USDEQUIVALENT"));
-                p.setSector(rs.getString("SECTORCODE"));
+                String sectorCode = rs.getString("SECTORCODE");
+                p.setSector(sectorCode);
+
+                String sectorDesc = SECTOR_MAPP.getOrDefault(sectorCode, "UNKNOWN");
+                p.setSectorDescription(sectorDesc);
                 propsList.add(p);
             }
 
@@ -134,6 +138,7 @@ public class PaymentService {
             dynamicItems.add(Map.of("Code", rowNumber + ".7", "Value", p.getCross()));
             dynamicItems.add(Map.of("Code", rowNumber + ".8", "Value", p.getUsdEquivalent()));
             dynamicItems.add(Map.of("Code", rowNumber + ".10", "Value", p.getSector()));
+            dynamicItems.add(Map.of("Code", rowNumber + ".11", "Value", p.getSectorDescription()));
             rowNumber++;
         }
 
@@ -279,5 +284,17 @@ public class PaymentService {
             log.error("Error checking CBK payment status", e);
         }
     }
-
+    private static final Map<String, String> SECTOR_MAPP = Map.ofEntries(
+            Map.entry("PG01", "Livestock and Animal Products"),
+            Map.entry("PS07", "Other services"),
+            Map.entry("PG08", "Construction Materials"),
+            Map.entry("PG11", "Electronics and ICT"),
+            Map.entry("PS03", "Financial services"),
+            Map.entry("PT0",  "Transfers"),
+            Map.entry("PG06", "Manufactured goods"),
+            Map.entry("PG03", "Oil and Allied"),
+            Map.entry("PS02", "Travel and tourism services"),
+            Map.entry("PS01", "Transport Services"),
+            Map.entry("PG14", "Food and Beverages")
+    );
 }

@@ -99,7 +99,11 @@ public class PurchasesService {
                 p.setCross(rs.getString("CROSSRATE"));
                 p.setUsdEquivalent(rs.getString("USDEQUIVALENT"));
                 p.setInterBankCodes(rs.getString("INTERBANK_CODES"));
-                p.setSector(rs.getString("SECTORCODE"));
+                String sectorCode = rs.getString("SECTORCODE");
+                p.setSector(sectorCode);
+
+                String sectorDesc = SECTOR_MAP.getOrDefault(sectorCode, "UNKNOWN");
+                p.setSectorDescription(sectorDesc);
                 propsList.add(p);
             }
 
@@ -128,6 +132,7 @@ public class PurchasesService {
             dynamicItems.add(Map.of("Code", row + ".8", "Value", p.getUsdEquivalent()));
             dynamicItems.add(Map.of("Code", row + ".9", "Value", p.getInterBankCodes()));
             dynamicItems.add(Map.of("Code", row + ".11", "Value", p.getSector()));
+            dynamicItems.add(Map.of("Code", row + ".12", "Value", p.getSectorDescription()));
             row++;
         }
 
@@ -260,4 +265,20 @@ public class PurchasesService {
             log.error("Status check failed", e);
         }
     }
+    private static final Map<String, String> SECTOR_MAP = Map.ofEntries(
+            Map.entry("RG01", "Agricultural Exports"),
+            Map.entry("RS08", "Other services"),
+            Map.entry("RG08", "Manufactured-Non-Food"),
+            Map.entry("RG13", "Renewable Energy and Green Technology"),
+            Map.entry("RS03", "Financial services"),
+            Map.entry("RT0",  "Transfer"),
+            Map.entry("RG07", "Manufactured- Food"),
+            Map.entry("RS0", "SERVICES"),
+            Map.entry("RS01", "Transport Services"),
+            Map.entry("RG14", "Manufactured- Food"),
+            Map.entry("RS02","Travel and tourism services"),
+            Map.entry("RG11","Leather and Footwear"),
+            Map.entry("RG06","Oil and allied Products"),
+            Map.entry("RG03","Fish and allied Products")
+    );
 }

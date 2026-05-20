@@ -27,6 +27,7 @@ public class Props {
     private String derivativeCode;
     private String derivativeType;
     private String sectorCode;
+    private String sectorDescription;
     private String contractId;
     private String notionalPrincipalAmount;
     private String position;
