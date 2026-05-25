@@ -45,7 +45,7 @@ public class PurchasesFetch {
                             
                                                        WHEN 'FINANCE AND INSURANCE'                              THEN 'RS03'
                             
-                                                       WHEN 'FOREIGN TRADE'                                      THEN 'RTO'
+                                                       WHEN 'FOREIGN TRADE'                                      THEN 'RT0'
                             
                                                        WHEN 'MANUFACTURING'                                      THEN 'RG06'
                             
